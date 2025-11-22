@@ -7,10 +7,13 @@ from .models import (
 from .serializers import (
     PortfolioSerializer, ContactSerializer, TeamSerializer, 
     ClientSerializer, StudentSerializer, AuthorSerializer,
-    BookSerializer,
+    BookSerializer, UserLoginSerializer, UserRegistrationSerializer,
     )
-from rest_framework import filters
 from .pagination import StudentPagination
+from rest_framework.views import APIView
+from django.contrib.auth.models import User
+from django.contrib.auth import authenticate, login
+from rest_framework_simplejwt.tokens import RefreshToken
 
 # new class-based view using ModelViewSet for Student
 class StudentViewSet(viewsets.ModelViewSet):
@@ -20,6 +23,78 @@ class StudentViewSet(viewsets.ModelViewSet):
     search_fields = ['name']
     ordering_fields = ['name']
     filterset_fields = ['age']
+
+
+class RegisterAPI(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    def post(self, request, *args, **kwargs):
+        serializer = UserRegistrationSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+
+            refresh = RefreshToken.for_user(user)
+
+            return Response({
+                "user": UserRegistrationSerializer(user).data,
+                "refresh": str(refresh),
+                "access": str(refresh.access_token),
+            }, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class LoginAPI(APIView):
+    """
+    Login API using APIView
+    """
+    authentication_classes = []
+    permission_classes = []
+    queryset = User.objects.all()
+
+    def post(self, request):
+        serializer = UserLoginSerializer(data=request.data)
+        
+        if serializer.is_valid():
+            user = serializer.validated_data['user']
+            
+            # Generate JWT tokens
+            refresh = RefreshToken.for_user(user)
+            
+            response_data = {
+                'message': 'Login successful',
+                'user': {
+                    'id': user.id,
+                    'username': user.username,
+                    'email': user.email
+                },
+                'tokens': {
+                    'refresh': str(refresh),
+                    'access': str(refresh.access_token),
+                }
+            }
+            return Response(response_data, status=status.HTTP_200_OK)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class LogoutAPIView(APIView):
+    """
+    Logout API using APIView
+    """
+    def post(self, request):
+        try:
+            refresh_token = request.data.get('refresh_token')
+            if refresh_token:
+                token = RefreshToken(refresh_token)
+                token.blacklist()
+                return Response({'message': 'Successfully logged out'}, status=status.HTTP_200_OK)
+            return Response({'error': 'Refresh token required'}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)  
+
+class UserListAPI(APIView):
+    def get(self, request, *args, **kwargs):
+        users = User.objects.all().values('id', 'username')
+        return Response(users, status=status.HTTP_200_OK)
 
 class AuthorViewSet(viewsets.ModelViewSet):
     queryset = Author.objects.all()
