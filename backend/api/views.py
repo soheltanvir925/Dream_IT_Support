@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from rest_framework import viewsets, status
 from rest_framework.response import Response
+from rest_framework.renderers import TemplateHTMLRenderer, JSONRenderer
 from .models import (
     Portfolio, Contact, Team, Client, Student, Author, Book,
     )
@@ -29,20 +30,34 @@ class RegisterAPI(APIView):
     authentication_classes = []
     permission_classes = []
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request):
         serializer = UserRegistrationSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
 
+            # Generate JWT tokens
             refresh = RefreshToken.for_user(user)
 
-            return Response({
-                "user": UserRegistrationSerializer(user).data,
-                "refresh": str(refresh),
-                "access": str(refresh.access_token),
-            }, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+            return Response({
+                    'success': True,
+                    'message': 'Registration successful',
+                    'user': {
+                        'id': user.id,
+                        'username': user.username,
+                        'email': user.email
+                    },
+                    'tokens': {
+                        'access': str(refresh.access_token),
+                        'refresh': str(refresh),
+                    }
+                }, status=status.HTTP_201_CREATED)
+        
+        return Response({
+            'success': False,
+            'error': 'Registration failed',
+            },status=status.HTTP_400_BAD_REQUEST)
+    
 class LoginAPI(APIView):
     """
     Login API using APIView
@@ -60,20 +75,7 @@ class LoginAPI(APIView):
             # Generate JWT tokens
             refresh = RefreshToken.for_user(user)
             
-            response_data = {
-                'message': 'Login successful',
-                'user': {
-                    'id': user.id,
-                    'username': user.username,
-                    'email': user.email
-                },
-                'tokens': {
-                    'refresh': str(refresh),
-                    'access': str(refresh.access_token),
-                }
-            }
-            return Response(response_data, status=status.HTTP_200_OK)
-        
+            return Response(status=status.HTTP_200_OK)        
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class LogoutAPIView(APIView):
@@ -90,11 +92,8 @@ class LogoutAPIView(APIView):
             return Response({'error': 'Refresh token required'}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)  
-
 class UserListAPI(APIView):
-    def get(self, request, *args, **kwargs):
-        users = User.objects.all().values('id', 'username')
-        return Response(users, status=status.HTTP_200_OK)
+    pass
 
 class AuthorViewSet(viewsets.ModelViewSet):
     queryset = Author.objects.all()

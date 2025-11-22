@@ -3,14 +3,14 @@ from .models import Portfolio, Contact, Team, Client, Student, Book, Author, Cus
 from django.contrib.auth import authenticate
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
-    password1 = serializers.CharField(write_only=True, required=True, min_length=8)
-    password2 = serializers.CharField(write_only=True, required=True)
+    password = serializers.CharField(write_only=True, required=True, min_length=8)
+    password1 = serializers.CharField(write_only=True, required=True)
     class Meta:
         model = CustomUser
-        fields = ('id', 'usename', 'email', 'phone', 'fist_name', 'last_name', 'role', 'password1', 'password2', 'image')
+        fields = ('username', 'email', 'password', 'password1', 'role')
 
     def validate(self, attributes):
-        if attributes['password1'] != attributes['password2']:
+        if attributes['password'] != attributes['password1']:
             raise serializers.ValidationError({"password": "Password fields didn't match."})
         return attributes
     
@@ -20,7 +20,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         return value
     
     def create(self, validated_data):
-        validated_data.pop('password2')
+        validated_data.pop('password1')
         user = CustomUser.objects.create_user(**validated_data)
         return user
 
