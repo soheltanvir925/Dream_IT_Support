@@ -95,7 +95,7 @@ class LogoutAPIView(APIView):
 class UserListAPI(APIView):
     # List all users
 
-    permission_classes = [IsAuthenticated]
+    #permission_classes = [IsAuthenticated]
 
 
     def get(self, request):

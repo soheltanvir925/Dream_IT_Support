@@ -6,10 +6,8 @@ class UserListSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
         fields = (
-            'id', 'username', 'email', 'full_name', 
-            'first_name', 'last_name', 'phone_number',
-            'date_of_birth', 'user_type', 'is_verified',
-            'is_active', 'is_staff', 'role', 'date_joined', 'created_at', 'updated_at'
+            'id', 'username', 'email',
+            'first_name', 'last_name', 'phone_number', 'role', 'date_joined', 'created_at', 'updated_at'
         )
         read_only_fields = ('id', 'date_joined', 'created_at', 'updated_at')
 
