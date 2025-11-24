@@ -1,14 +1,14 @@
 from django.shortcuts import render
 from rest_framework import viewsets, status
 from rest_framework.response import Response
-from rest_framework.renderers import TemplateHTMLRenderer, JSONRenderer
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from .models import (
-    Portfolio, Contact, Team, Client, Student, Author, Book,
+    Portfolio, Contact, Team, Client, Student, Author, Book, CustomUser
     )
 from .serializers import (
     PortfolioSerializer, ContactSerializer, TeamSerializer, 
     ClientSerializer, StudentSerializer, AuthorSerializer,
-    BookSerializer, UserLoginSerializer, UserRegistrationSerializer,
+    BookSerializer, UserLoginSerializer, UserRegistrationSerializer, UserListSerializer,
     )
 from .pagination import StudentPagination
 from rest_framework.views import APIView
@@ -93,7 +93,25 @@ class LogoutAPIView(APIView):
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)  
 class UserListAPI(APIView):
-    pass
+    # List all users
+
+    permission_classes = [IsAuthenticated]
+
+
+    def get(self, request):
+        try:
+            users = CustomUser.objects.all()
+            serializer = UserListSerializer(users, many=True)
+
+            response_data = {
+                'success': True,
+                'message': 'User list fetched successfully',
+                'data': serializer.data
+            }
+            return Response(response_data, status=status.HTTP_200_OK)      
+
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 class AuthorViewSet(viewsets.ModelViewSet):
     queryset = Author.objects.all()
